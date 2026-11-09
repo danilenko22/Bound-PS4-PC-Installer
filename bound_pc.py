@@ -23,7 +23,7 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 TITLE_ID = "CUSA04380"
 GAME_NAME = "Bound"
 INSTALL_MARKER = "bound_install.json"
@@ -485,9 +485,47 @@ def style_root(root, title):
 
 def header(parent, subtitle):
     frame = ttk.Frame(parent, style="TFrame")
-    ttk.Label(frame, text="BOUND", style="Title.TLabel").pack(anchor="w")
     ttk.Label(frame, text=subtitle, style="Muted.TLabel").pack(anchor="w")
     return frame
+
+
+BANNER_RATIO = 480 / 1280
+
+
+def add_banner(root, below, sources, fade=False):
+    """Shows the first existing image of `sources` as a banner above `below`, sized to the window."""
+    try:
+        from PIL import Image, ImageDraw, ImageTk
+        image = None
+        for src in sources:
+            if src and Path(src).exists():
+                image = Image.open(src).convert("RGB")
+                break
+        if image is None:
+            return
+        root.update_idletasks()
+        width = max(below.winfo_reqwidth(), 480)
+        height = int(width * BANNER_RATIO)
+        w, h = image.size
+        crop_h = int(w * BANNER_RATIO)
+        if crop_h <= h:
+            top = (h - crop_h) // 2
+            image = image.crop((0, top, w, top + crop_h))
+        image = image.resize((width, height), Image.LANCZOS)
+        if fade:
+            bg = tuple(int(BG[i:i + 2], 16) for i in (1, 3, 5))
+            mask = Image.new("L", image.size)
+            draw = ImageDraw.Draw(mask)
+            for y in range(height):
+                t = max(0.0, (y - height * 0.6) / (height * 0.4))
+                draw.line([(0, y), (width, y)], fill=int(255 * t ** 1.6))
+            image = Image.composite(Image.new("RGB", image.size, bg), image, mask)
+        photo = ImageTk.PhotoImage(image)
+        label = tk.Label(root, image=photo, bd=0, highlightthickness=0, bg=BG)
+        label.image = photo
+        label.pack(side="top", fill="x", before=below)
+    except Exception:
+        pass
 
 
 def path_row(parent, label, var, command):
@@ -507,7 +545,7 @@ class Installer:
         ttk.Style(root).configure("TFrame", background=BG)
         main = ttk.Frame(root, padding=20)
         main.pack(fill="both", expand=True)
-        header(main, T("subtitle")).pack(fill="x", pady=(0, 10))
+        header(main, T("subtitle")).pack(fill="x", pady=(0, 6))
 
         self.install_dir = tk.StringVar(value=DEFAULT_INSTALL_DIR)
         path_row(main, T("install_dir"), self.install_dir, self.pick_install_dir)
@@ -531,8 +569,9 @@ class Installer:
         ttk.Checkbutton(main, text=T("shortcut"), variable=self.shortcut).pack(anchor="w", pady=(14, 0))
 
         self.status = tk.StringVar(value="")
-        self.progress = ttk.Progressbar(main, mode="indeterminate", length=520)
-        self.progress.pack(fill="x", pady=(16, 4))
+        self.progress_slot = ttk.Frame(main, height=12)
+        self.progress_slot.pack(fill="x", pady=(16, 4))
+        self.progress = ttk.Progressbar(self.progress_slot, mode="indeterminate", length=520)
         ttk.Label(main, textvariable=self.status, style="Muted.TLabel").pack(anchor="w")
 
         self.button = ttk.Button(main, text=T("install"), style="Accent.TButton", command=self.start)
@@ -540,6 +579,7 @@ class Installer:
         ttk.Label(main, text=T("notice"), style="Muted.TLabel").pack(anchor="w")
         ttk.Label(main, text=f"v{APP_VERSION}", style="Muted.TLabel").pack(anchor="e")
         self.events = queue.Queue()
+        add_banner(root, main, [resource_path("assets", "banner.png")])
 
     def refresh_mode(self):
         for child in self.source_frame.winfo_children():
@@ -632,6 +672,7 @@ class Installer:
             messagebox.showerror(T("err_title"), str(e))
             return
         self.button.configure(state="disabled", text=T("installing"))
+        self.progress.pack(fill="x")
         self.progress.start(12)
         threading.Thread(target=self.worker, args=(layout, base, update, self.mode.get(),
                                                    self.shortcut.get()), daemon=True).start()
@@ -728,6 +769,7 @@ class Launcher:
         main = ttk.Frame(root, padding=20)
         main.pack(fill="both", expand=True)
         header(main, T("subtitle")).pack(fill="x", pady=(0, 14))
+        main.configure(width=520)
 
         self.fullscreen = tk.BooleanVar(value=self.settings["fullscreen"])
         self.show_fps = tk.BooleanVar(value=self.settings["show_fps"])
@@ -757,6 +799,11 @@ class Launcher:
         ttk.Button(row, text=T("open_saves"), command=lambda: self.open(layout.saves)).pack(side="left", expand=True, fill="x")
         ttk.Button(row, text=T("open_folder"), command=lambda: self.open(layout.root)).pack(side="left", expand=True, fill="x", padx=(6, 0))
         ttk.Label(main, text=f"v{APP_VERSION}  ·  shadPS4 v0.20 (b2d7ec7d + patch)", style="Muted.TLabel").pack(anchor="e", pady=(10, 0))
+        user_logo = layout.base / "sce_sys" / "pic1.png"
+        if user_logo.exists():
+            add_banner(root, main, [user_logo], fade=True)
+        else:
+            add_banner(root, main, [resource_path("assets", "banner.png")])
 
     def collect(self):
         self.settings.update(
