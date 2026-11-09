@@ -45,14 +45,12 @@ Controllers (DualShock 4, DualSense, Xbox…) work out of the box. Default keybo
 
 ## Known messages (harmless)
 
-* **"An error has occurred. Code: 0x80550006"** at startup: the game asks for a PSN sign-in, which an
-  offline emulator cannot provide. Press **OK** — the game works normally (online features are not available).
 * **"PS4 system fonts not found"** notification: shadPS4 uses its bundled fallback fonts. If you
   already use shadPS4 with fonts dumped from your own console (`%APPDATA%\shadPS4\fonts`), the
   installer copies them automatically and the message does not appear.
 * **Windows SmartScreen** "Unknown publisher": the executable is not signed. Click **More info → Run anyway**.
 
-## The fix (technical)
+## The fixes (technical)
 
 Bound keeps a GPU particle counter in the same memory page as constants written by the CPU. With
 shadPS4's default `readbacks_mode = 0`, a CPU write marks the whole page as CPU-modified and the next
@@ -63,6 +61,12 @@ work groups, the GPU stays at 100 % and the game drops to ~10 FPS or a black scr
 The launcher runs shadPS4 v0.20 with **`readbacks_mode = 1` (Relaxed)**, so GPU data is read back
 before the CPU writes to that page. Result: a stable 60 FPS in gameplay and menus (tested on an
 AMD Radeon RX 9070 XT).
+
+**PSN error at startup.** Bound asks for the PSN account at boot and shows the system error dialog
+`0x80550006` (signed out) when it is missing. The bundled shadPS4 includes a small patch
+([`patches/shadps4-offline-psn-error-dialog.patch`](patches/shadps4-offline-psn-error-dialog.patch)):
+in offline mode that specific dialog is accepted automatically, so the game starts without the
+message. Online features (leaderboards) are not available.
 
 ## Files and folders
 
@@ -82,7 +86,7 @@ C:\Games\Bound\
 Requires Python 3.10+ with `pyinstaller` and `pillow`.
 
 1. Put the unmodified third-party binaries in `payload\`:
-   * `payload\emulator\shadPS4.exe` – shadPS4 commit [`b2d7ec7d`](https://github.com/shadps4-emu/shadPS4/tree/b2d7ec7d31f9ad9426db93afe079db8679b3e1e0)
+   * `payload\emulator\shadPS4.exe` – shadPS4 commit [`b2d7ec7d`](https://github.com/shadps4-emu/shadPS4/tree/b2d7ec7d31f9ad9426db93afe079db8679b3e1e0) built with `patches\shadps4-offline-psn-error-dialog.patch` applied
    * `payload\extractor\` – `pkg_extractor.exe`, `libc++.dll`, `zlib1.dll` from [ShadPs4Plus PKG Extractor v1.1](https://github.com/ZuanCrisp/shadPS4PlusPKGExtractor/releases/tag/v1.1)
    * `payload\licenses\` – `GPL-2.0.txt` and `THIRD_PARTY_NOTICES.txt` (included in this repo)
 2. Run `build.bat`. The result is `dist\Bound.exe`.
@@ -90,7 +94,7 @@ Requires Python 3.10+ with `pyinstaller` and `pillow`.
 ## Credits and licenses
 
 * Installer/launcher: MIT License (see `LICENSE`).
-* [shadPS4](https://github.com/shadps4-emu/shadPS4) – GPL-2.0-or-later, by the shadPS4 Emulator Project.
+* [shadPS4](https://github.com/shadps4-emu/shadPS4) – GPL-2.0-or-later, by the shadPS4 Emulator Project (bundled with one small patch, see `patches/`).
 * [ShadPs4Plus PKG Extractor](https://github.com/ZuanCrisp/shadPS4PlusPKGExtractor) – GPL-2.0.
 
 Bound is a trademark of its respective owners. This project is not affiliated with or endorsed by
@@ -107,6 +111,5 @@ PKG. Incluye el arreglo de la caída a ~10 FPS al volver al menú (`readbacks_mo
 2. Elige la carpeta de instalación y tus **PKG** (base + actualización v1.03) o tu carpeta **`CUSA04380`** ya extraída.
 3. Pulsa **Instalar** y juega con el acceso directo **Bound** del escritorio.
 
-El instalador se muestra en español si Windows está en español. El aviso **0x80550006** al arrancar
-es normal (no hay PSN en el emulador): pulsa **OK** y el juego funciona igual. No incluye archivos del
-juego, firmware ni fuentes de PS4.
+El instalador se muestra en español si Windows está en español. No incluye archivos del juego,
+firmware ni fuentes de PS4.

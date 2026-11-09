@@ -30,6 +30,7 @@ INSTALL_MARKER = "bound_install.json"
 DEFAULT_INSTALL_DIR = r"C:\Games\Bound"
 REQUIRED_SPACE = 2_500_000_000
 CREATE_NO_WINDOW = 0x08000000
+DETACHED_PROCESS = 0x00000008
 
 RESOLUTIONS = ["1280x720", "1600x900", "1920x1080", "2560x1440", "3840x2160"]
 # PS4 system language ids
@@ -418,8 +419,28 @@ def launch_game(layout, settings):
     args = [str(layout.exe), "-g", str(layout.eboot)]
     if settings["fullscreen"]:
         args += ["--fullscreen", "true"]
-    subprocess.Popen(args, cwd=str(layout.emulator), creationflags=CREATE_NO_WINDOW)
+    subprocess.Popen(args, cwd=str(layout.emulator), env=clean_child_env(),
+                     creationflags=CREATE_NO_WINDOW | DETACHED_PROCESS, close_fds=True)
     return True
+
+
+def clean_child_env():
+    """Keeps the emulator from loading DLLs out of PyInstaller's temporary folder, which would
+    otherwise stay locked and trigger 'Failed to remove temporary directory' on exit."""
+    if not getattr(sys, "frozen", False):
+        return None
+    try:
+        ctypes.windll.kernel32.SetDllDirectoryW(None)
+    except Exception:
+        pass
+    meipass = str(getattr(sys, "_MEIPASS", "")).lower()
+    env = {k: v for k, v in os.environ.items() if not k.upper().startswith(("_MEI", "_PYI"))}
+    for key in ("TCL_LIBRARY", "TK_LIBRARY"):
+        env.pop(key, None)
+    if meipass and "PATH" in env:
+        env["PATH"] = os.pathsep.join(p for p in env["PATH"].split(os.pathsep)
+                                      if p and not p.lower().startswith(meipass))
+    return env
 
 
 # ---------------------------------------------------------------- UI helpers
@@ -735,7 +756,7 @@ class Launcher:
         row.pack(fill="x")
         ttk.Button(row, text=T("open_saves"), command=lambda: self.open(layout.saves)).pack(side="left", expand=True, fill="x")
         ttk.Button(row, text=T("open_folder"), command=lambda: self.open(layout.root)).pack(side="left", expand=True, fill="x", padx=(6, 0))
-        ttk.Label(main, text=f"v{APP_VERSION}  ·  shadPS4 v0.20 (b2d7ec7d)", style="Muted.TLabel").pack(anchor="e", pady=(10, 0))
+        ttk.Label(main, text=f"v{APP_VERSION}  ·  shadPS4 v0.20 (b2d7ec7d + patch)", style="Muted.TLabel").pack(anchor="e", pady=(10, 0))
 
     def collect(self):
         self.settings.update(
