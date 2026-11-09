@@ -1,0 +1,33 @@
+From 7da01e73e0fea34bac5875bf58ed469ceaebab19 Mon Sep 17 00:00:00 2001
+From: danilenko22 <danilenko22@users.noreply.github.com>
+Date: Mon, 9 Nov 2026 02:13:01 -0300
+Subject: [PATCH] spirv: pass sample index to MSAA storage image reads
+
+OpImageRead on a multisampled storage image dropped the Sample operand
+(writes already passed it), producing invalid SPIR-V. On AMD the read
+returned garbage, so per-sample post-process passes (e.g. Bound's
+volumetric fog) wiped the lit scene.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/shader_recompiler/backend/spirv/emit_spirv_image.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/shader_recompiler/backend/spirv/emit_spirv_image.cpp b/src/shader_recompiler/backend/spirv/emit_spirv_image.cpp
+index 28904ba8..ee27e39f 100644
+--- a/src/shader_recompiler/backend/spirv/emit_spirv_image.cpp
++++ b/src/shader_recompiler/backend/spirv/emit_spirv_image.cpp
+@@ -342,6 +342,10 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod
+             image_ptr = ctx.OpAccessChain(single_image_ptr_type, image_ptr, std::array{lod});
+ #endif
+         }
++        if (texture.view_type == AmdGpu::ImageType::Color2DMsaa ||
++            texture.view_type == AmdGpu::ImageType::Color2DMsaaArray) {
++            operands.Add(spv::ImageOperandsMask::Sample, ms);
++        }
+         const Id image = ctx.OpLoad(texture.image_type, image_ptr);
+         texel = ctx.OpImageRead(color_type, image, fixed_coords, operands.mask, operands.operands);
+     }
+-- 
+2.56.0.windows.2
+

@@ -1,0 +1,14 @@
+diff --git a/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp b/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
+index a2b9d9b9..21178f4c 100644
+--- a/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
++++ b/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
+@@ -643,7 +643,8 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
+         module = CompileSPV(spv, instance.GetDevice());
+     }
+ 
+-    RegisterShaderBinary(std::move(spv), info.pgm_hash, perm_idx);
++    RegisterShaderBinary(is_patched ? std::vector<u32>(*patch) : std::move(spv), info.pgm_hash,
++                         perm_idx);
+ 
+     const auto name = GetShaderName(info.hw_stage, info.pgm_hash, perm_idx);
+     Vulkan::SetObjectName(instance.GetDevice(), module, name);

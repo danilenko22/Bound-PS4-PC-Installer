@@ -2,8 +2,9 @@
 
 A one-click Windows installer and launcher that turns your own legally dumped PS4 copy of
 **Bound (`CUSA04380`)** into a ready-to-play PC installation running on the
-[shadPS4](https://github.com/shadps4-emu/shadPS4) emulator — **with the fix for the GPU slowdown**
-that drops the game to ~10 FPS (or a black screen) after returning to the main menu.
+[shadPS4](https://github.com/shadps4-emu/shadPS4) emulator — **with fixes** for the GPU slowdown
+(~10 FPS or a black screen after returning to the main menu), the dark memory scenes, the missing
+door at the end of the first memory and the flickering shadows on lit walls.
 
 > **No game files are included.** You must provide your own dumped PKG files or game folder.
 > No PS4 firmware or system fonts are needed or included.
@@ -58,9 +59,24 @@ upload overwrites the GPU-written counter with stale CPU data (float constants s
 about one billion when read as an integer). An indirect-dispatch shader then launches millions of
 work groups, the GPU stays at 100 % and the game drops to ~10 FPS or a black screen.
 
-The launcher runs shadPS4 v0.20 with **`readbacks_mode = 1` (Relaxed)**, so GPU data is read back
-before the CPU writes to that page. Result: a stable 60 FPS in gameplay and menus (tested on an
-AMD Radeon RX 9070 XT).
+The launcher runs shadPS4 v0.20 with **`readbacks_mode = 2` (Precise)**, so GPU data is read back
+before the CPU touches that page. Result: a stable 60 FPS in gameplay and menus (tested on an
+AMD Radeon RX 9070 XT). Precise (not Relaxed) is required because the game also *reads* GPU-written
+state: with Relaxed the white door at the end of the first memory never appears.
+
+**Dark memory scenes.** The memory scenes (table, chess) rendered as dark silhouettes because
+shadPS4 dropped the sample index when a shader reads a multisampled *storage* image, so Bound's
+per-sample fog shader read garbage
+([`patches/shadps4-msaa-storage-image-sample.patch`](patches/shadps4-msaa-storage-image-sample.patch)).
+
+**Flickering wall shadows.** Lit walls made of broken pieces flickered into shadow for single
+frames. The compute shader that rebuilds the normals of those pieces has a branch that overwrites
+a few vertex normals; on shadPS4 that data comes out wrong and changes every frame, and the
+lighting shader offsets its shadow lookup along the normal, so whole walls toggled between light
+and shadow. The bundled shadPS4 drops that branch for this one shader when it is translated
+([`patches/shadps4-bound-wall-flicker.patch`](patches/shadps4-bound-wall-flicker.patch)). No game
+code is included or modified on disk. The installer also clears shadPS4's shader cache for Bound
+so old translations are not reused.
 
 **PSN error at startup.** Bound asks for the PSN account at boot and shows the system error dialog
 `0x80550006` (signed out) when it is missing. The bundled shadPS4 includes a small patch
@@ -92,7 +108,7 @@ user's copy of the game.
 Requires Python 3.10+ with `pyinstaller` and `pillow` (`build.bat` also generates the icon and banner).
 
 1. Put the unmodified third-party binaries in `payload\`:
-   * `payload\emulator\shadPS4.exe` – shadPS4 commit [`b2d7ec7d`](https://github.com/shadps4-emu/shadPS4/tree/b2d7ec7d31f9ad9426db93afe079db8679b3e1e0) built with `patches\shadps4-offline-psn-error-dialog.patch` applied
+   * `payload\emulator\shadPS4.exe` – shadPS4 commit [`b2d7ec7d`](https://github.com/shadps4-emu/shadPS4/tree/b2d7ec7d31f9ad9426db93afe079db8679b3e1e0) built with all the patches in `patches\` applied
    * `payload\extractor\` – `pkg_extractor.exe`, `libc++.dll`, `zlib1.dll` from [ShadPs4Plus PKG Extractor v1.1](https://github.com/ZuanCrisp/shadPS4PlusPKGExtractor/releases/tag/v1.1)
    * `payload\licenses\` – `GPL-2.0.txt` and `THIRD_PARTY_NOTICES.txt` (included in this repo)
 2. Run `build.bat`. The result is `dist\Bound.exe`.
@@ -100,7 +116,7 @@ Requires Python 3.10+ with `pyinstaller` and `pillow` (`build.bat` also generate
 ## Credits and licenses
 
 * Installer/launcher: MIT License (see `LICENSE`).
-* [shadPS4](https://github.com/shadps4-emu/shadPS4) – GPL-2.0-or-later, by the shadPS4 Emulator Project (bundled with one small patch, see `patches/`).
+* [shadPS4](https://github.com/shadps4-emu/shadPS4) – GPL-2.0-or-later, by the shadPS4 Emulator Project (bundled with small patches, see `patches/`).
 * [ShadPs4Plus PKG Extractor](https://github.com/ZuanCrisp/shadPS4PlusPKGExtractor) – GPL-2.0.
 
 Bound is a trademark of its respective owners. This project is not affiliated with or endorsed by
@@ -111,7 +127,8 @@ Sony Interactive Entertainment, Plastic Studios or the shadPS4 team.
 ## Español
 
 Instalador y launcher para jugar **Bound (PS4, `CUSA04380`)** en PC con shadPS4, usando tus propios
-PKG. Incluye el arreglo de la caída a ~10 FPS al volver al menú (`readbacks_mode = 1`).
+PKG. Incluye los arreglos de la caída a ~10 FPS al volver al menú, las escenas de recuerdos
+oscuras, la puerta blanca que no aparecía y el parpadeo de sombras en los muros iluminados.
 
 1. Descarga **`Bound.exe`** desde [Releases](../../releases) y ábrelo (no hace falta Python).
 2. Elige la carpeta de instalación y tus **PKG** (base + actualización v1.03) o tu carpeta **`CUSA04380`** ya extraída.

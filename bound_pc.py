@@ -23,7 +23,7 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 TITLE_ID = "CUSA04380"
 GAME_NAME = "Bound"
 INSTALL_MARKER = "bound_install.json"
@@ -312,9 +312,10 @@ def write_game_config(layout, settings):
     width, height = (int(v) for v in settings["resolution"].split("x"))
     config = {
         "GPU": {
-            # The fix: without readbacks the emulator overwrites a GPU particle counter with
-            # stale CPU data and the game tries to draw ~1 billion particles (10 FPS / black screen).
-            "readbacks_mode": 1,
+            # Precise readbacks: without them the emulator overwrites a GPU particle counter with
+            # stale CPU data (10 FPS / black screen), and the white door at the end of the first
+            # memory never appears because the CPU reads GPU-written state.
+            "readbacks_mode": 2,
             "readback_linear_images_enabled": False,
             "direct_memory_access_enabled": False,
             "copy_gpu_buffers": False,
@@ -708,6 +709,8 @@ class Installer:
 
             self.events.put(("status", T("st_emulator")))
             layout.emulator.mkdir(parents=True, exist_ok=True)
+            # Shaders cached by an older emulator build would keep the old (buggy) translation.
+            shutil.rmtree(layout.user / "cache" / TITLE_ID, ignore_errors=True)
             shutil.copy2(resource_path("payload", "emulator", "shadPS4.exe"), layout.exe)
             licenses = layout.root / "licenses"
             if licenses.exists():
@@ -798,7 +801,7 @@ class Launcher:
         row.pack(fill="x")
         ttk.Button(row, text=T("open_saves"), command=lambda: self.open(layout.saves)).pack(side="left", expand=True, fill="x")
         ttk.Button(row, text=T("open_folder"), command=lambda: self.open(layout.root)).pack(side="left", expand=True, fill="x", padx=(6, 0))
-        ttk.Label(main, text=f"v{APP_VERSION}  ·  shadPS4 v0.20 (b2d7ec7d + patch)", style="Muted.TLabel").pack(anchor="e", pady=(10, 0))
+        ttk.Label(main, text=f"v{APP_VERSION}  ·  shadPS4 v0.20 (b2d7ec7d + patches)", style="Muted.TLabel").pack(anchor="e", pady=(10, 0))
         user_logo = layout.base / "sce_sys" / "pic1.png"
         if user_logo.exists():
             add_banner(root, main, [user_logo], fade=True)
