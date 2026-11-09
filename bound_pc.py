@@ -23,7 +23,7 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.0.0"
 TITLE_ID = "CUSA04380"
 GAME_NAME = "Bound"
 INSTALL_MARKER = "bound_install.json"

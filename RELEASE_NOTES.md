@@ -21,6 +21,7 @@ A standalone Windows installer and launcher that turns your legally dumped PS4 c
 * **Launcher options:** fullscreen/windowed, resolution up to 4K, game language, FPS counter.
 * **Direct play:** check *"Launch directly next time"*; hold **Shift** while opening the shortcut to get the launcher back.
 * **English / Spanish** interface (follows the Windows language). No console windows.
+* **Clean look:** original artwork in the installer; the launcher shows Bound's title image from your own game files.
 
 ---
 
@@ -31,4 +32,4 @@ A standalone Windows installer and launcher that turns your legally dumped PS4 c
 
 *This release contains no copyrighted game files, firmware or fonts. You must provide your own legally dumped PS4 files. Bundled third-party software: shadPS4 (commit b2d7ec7d + one patch in `patches/`, GPL-2.0) and ShadPs4Plus PKG Extractor v1.1 (GPL-2.0) — see `licenses\THIRD_PARTY_NOTICES.txt`.*
 
-SHA-256 (`Bound.exe`): 2EF9DC1958BBE89C3D3B7AF7AA73BAA6B1E909D9EBE20C71D3008A9AACE7802A
+SHA-256 (`Bound.exe`): B10FF22453B73CBD9B6715961600A5D15384DD121B5722025D140DB4F76ABE44
