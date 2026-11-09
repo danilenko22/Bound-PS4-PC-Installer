@@ -1,0 +1,22 @@
+Third-party software included in Bound PS4 PC Installer
+=======================================================
+
+This package does NOT contain any game files, PS4 firmware or system fonts.
+Users must provide their own legally dumped copy of Bound (CUSA04380).
+
+1. shadPS4 (PlayStation 4 emulator)
+   File:     emulator\shadPS4.exe (unmodified build)
+   Version:  v0.20.0-13, commit b2d7ec7d31f9ad9426db93afe079db8679b3e1e0
+   License:  GNU General Public License v2.0 or later (see GPL-2.0.txt)
+   Source:   https://github.com/shadps4-emu/shadPS4/tree/b2d7ec7d31f9ad9426db93afe079db8679b3e1e0
+   Authors:  shadPS4 Emulator Project
+
+2. ShadPs4Plus PKG Extractor
+   Files:    pkg_extractor.exe, libc++.dll, zlib1.dll (unmodified, used only during installation)
+   Version:  v1.1
+   License:  GNU General Public License v2.0 (see GPL-2.0.txt)
+   Source:   https://github.com/ZuanCrisp/shadPS4PlusPKGExtractor/releases/tag/v1.1
+
+The installer/launcher wrapper itself is released under the MIT License (see LICENSE in the
+project repository). Bound is a trademark of its respective owners; this project is not
+affiliated with or endorsed by Sony Interactive Entertainment, Plastic Studios or the shadPS4 team.
